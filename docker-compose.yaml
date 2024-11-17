@@ -1,8 +1,7 @@
 name: open-data-capture
 volumes:
   caddy_data:
-  mongo_config:
-  mongo_data:
+  mssql_data:
 services:
   caddy:
     image: caddy:2.7-alpine
@@ -22,15 +21,14 @@ services:
       args:
         - RELEASE_VERSION
     depends_on:
-      - mongo
+      - mssql
     restart: unless-stopped
     environment:
       - GATEWAY_INTERNAL_NETWORK_URL=http://gateway:80
-      - MONGO_REPLICA_SET=rs0
-      - MONGO_RETRY_WRITES=true
-      - MONGO_WRITE_CONCERN=majority
-      - MONGO_DIRECT_CONNECTION=true
-      - MONGO_URI=mongodb://mongo:27017
+      - MSSQL_PORT=1433
+      - MSSQL_USER=testuser
+      - MSSQL_PASSWORD=${MSSQL_PASSWORD}
+      - MSSQL_DATABASE=${MSSQL_DATABASE}
       - NODE_ENV=production
       - DANGEROUSLY_DISABLE_PBKDF2_ITERATION
       - DEBUG
@@ -77,19 +75,15 @@ services:
     expose:
       - 80
     restart: unless-stopped
-  mongo:
-    image: mongo:${MONGODB_VERSION}
-    command: ['--replSet', 'rs0', '--bind_ip_all', '--port', '27017']
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_PASSWORD}
+    ports:
+      - '1433:1433'
     expose:
-      - 27017
+      - 1433
     restart: unless-stopped
-    healthcheck:
-      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}) }" | mongosh --port 27017 --quiet
-      interval: 5s
-      timeout: 30s
-      start_period: 0s
-      start_interval: 1s
-      retries: 30
     volumes:
-      - ./mongo/config:/data/configdb
-      - ./mongo/data:/data/db
+      - ./data/mssql:/var/opt/mssql

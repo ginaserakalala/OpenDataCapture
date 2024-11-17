@@ -9,8 +9,8 @@ generator json {
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("_")
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
 }
 
 // Assignments
@@ -28,21 +28,22 @@ type EncryptionKeyPair {
 }
 
 model AssignmentModel {
-  createdAt         DateTime               @default(now()) @db.Date
-  updatedAt         DateTime               @updatedAt @db.Date
-  id                String                 @id @map("_id")
-  completedAt       DateTime?
-  expiresAt         DateTime
+  createdAt         DateTime               @default(now()) @db.DateTime
+  updatedAt         DateTime               @updatedAt @db.DateTime
+  id                String                 @id @default(uuid()) @map("_id") @db.UniqueIdentifier
+  completedAt       DateTime?              @db.DateTime
+  expiresAt         DateTime               @db.DateTime
   group             GroupModel?            @relation(fields: [groupId], references: [id])
-  groupId           String?                @db.ObjectId
+  groupId           String?                @db.UniqueIdentifier
   instrument        InstrumentModel        @relation(fields: [instrumentId], references: [id])
-  instrumentId      String
-  instrumentRecord  InstrumentRecordModel?
+  instrumentId      String                 @db.UniqueIdentifier
+  instrumentRecord  InstrumentRecordModel? @relation(fields: [instrumentRecordId], references: [id])
+  instrumentRecordId String?               @db.UniqueIdentifier
   status            AssignmentStatus
   subject           SubjectModel           @relation(fields: [subjectId], references: [id])
-  subjectId         String
-  url               String
-  encryptionKeyPair EncryptionKeyPair
+  subjectId         String                 @db.UniqueIdentifier
+  url               String                 @db.NVarChar(2048)
+  // encryptionKeyPair EncryptionKeyPair      @db.VarBinary(8000)
 }
 
 // Groups
@@ -71,33 +72,40 @@ type GroupSettings {
 model GroupModel {
   createdAt               DateTime                @default(now()) @db.Date
   updatedAt               DateTime                @updatedAt @db.Date
-  id                      String                  @id @default(auto()) @map("_id") @db.ObjectId
-  accessibleInstrumentIds String[]
-  accessibleInstruments   InstrumentModel[]       @relation(fields: [accessibleInstrumentIds], references: [id])
-  assignments             AssignmentModel[]
-  instrumentRecords       InstrumentRecordModel[]
+  id                      String                  @id @default(auto()) @map("_id") @db.Uuid
   name                    String                  @unique
   settings                GroupSettings
+  type                    GroupType
+  accessibleInstruments   InstrumentModel[]       @relation("GroupInstrument", fields: [accessibleInstrumentIds], references: [id])
+  accessibleInstrumentIds String[]
+  assignments             AssignmentModel[]
+  instrumentRecords       InstrumentRecordModel[]
   sessions                SessionModel[]
   subjects                SubjectModel[]          @relation(fields: [subjectIds], references: [id])
   subjectIds              String[]
-  type                    GroupType
-  userIds                 String[]                @db.ObjectId
+  userIds                 String[]                @db.Uuid
   users                   UserModel[]             @relation(fields: [userIds], references: [id])
 }
 
-/// Instrument Records
+model GroupInstrument {
+  groupId       String
+  instrumentId  String
+  group         GroupModel   @relation(fields: [groupId], references: [id])
+  instrument    InstrumentModel @relation(fields: [instrumentId], references: [id])
+  @@id([groupId, instrumentId])
+}
+
+// Instrument Records
 
 model InstrumentRecordModel {
   createdAt        DateTime         @default(now()) @db.Date
   updatedAt        DateTime         @updatedAt @db.Date
-  id               String           @id @default(auto()) @map("_id") @db.ObjectId
-  /// [ComputedMeasures]
+  id               String           @id @default(auto()) @map("_id") @db.Uuid
   computedMeasures Json?
   data             Json?
   date             DateTime         @db.Date
   group            GroupModel?      @relation(fields: [groupId], references: [id])
-  groupId          String?          @db.ObjectId
+  groupId          String?          @db.Uuid
   subject          SubjectModel     @relation(fields: [subjectId], references: [id])
   subjectId        String
   instrument       InstrumentModel  @relation(fields: [instrumentId], references: [id])
@@ -105,10 +113,10 @@ model InstrumentRecordModel {
   assignment       AssignmentModel? @relation(fields: [assignmentId], references: [id])
   assignmentId     String?          @unique
   session          SessionModel     @relation(fields: [sessionId], references: [id])
-  sessionId        String           @db.ObjectId
+  sessionId        String           @db.Uuid
 }
 
-// Instruments 
+// Instruments
 
 enum InstrumentKind {
   FORM
@@ -127,9 +135,9 @@ model InstrumentModel {
   id          String                  @id @map("_id")
   assignments AssignmentModel[]
   bundle      String
-  groups      GroupModel[]            @relation(fields: [groupIds], references: [id])
-  groupIds    String[]                @db.ObjectId
   records     InstrumentRecordModel[]
+  groups      GroupModel[]            @relation("GroupInstrument", fields: [groupIds], references: [id])
+  groupIds    String[]                @db.Uuid
 }
 
 // Subjects
@@ -145,7 +153,7 @@ model SubjectModel {
   id                String                  @id @map("_id")
   dateOfBirth       DateTime?               @db.Date
   firstName         String?
-  groupIds          String[]                @db.ObjectId
+  groupIds          String[]                @db.Uuid
   groups            GroupModel[]            @relation(fields: [groupIds], references: [id])
   lastName          String?
   sessions          SessionModel[]
@@ -187,11 +195,11 @@ type AuthRule {
 model UserModel {
   createdAt             DateTime             @default(now()) @db.Date
   updatedAt             DateTime             @updatedAt @db.Date
-  id                    String               @id @default(auto()) @map("_id") @db.ObjectId
+  id                    String               @id @default(auto()) @map("_id") @db.Uuid
   basePermissionLevel   BasePermissionLevel?
   additionalPermissions AuthRule[]
   firstName             String
-  groupIds              String[]             @db.ObjectId
+  groupIds              String[]             @db.Uuid
   groups                GroupModel[]         @relation(fields: [groupIds], references: [id])
   lastName              String
   password              String
@@ -209,10 +217,10 @@ enum SessionType {
 model SessionModel {
   createdAt         DateTime                @default(now()) @db.Date
   updatedAt         DateTime                @updatedAt @db.Date
-  id                String                  @id @default(auto()) @map("_id") @db.ObjectId
+  id                String                  @id @default(auto()) @map("_id") @db.Uuid
   date              DateTime                @db.Date
   group             GroupModel?             @relation(fields: [groupId], references: [id])
-  groupId           String?                 @db.ObjectId
+  groupId           String?                 @db.Uuid
   instrumentRecords InstrumentRecordModel[]
   subject           SubjectModel            @relation(fields: [subjectId], references: [id])
   subjectId         String
@@ -224,7 +232,7 @@ model SessionModel {
 model SetupStateModel {
   createdAt                     DateTime @default(now()) @db.Date
   updatedAt                     DateTime @updatedAt @db.Date
-  id                            String   @id @default(auto()) @map("_id") @db.ObjectId
+  id                            String   @id @default(auto()) @map("_id") @db.Uuid
   isDemo                        Boolean
   isExperimentalFeaturesEnabled Boolean?
   isSetup                       Boolean

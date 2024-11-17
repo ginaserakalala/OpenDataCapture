@@ -3,11 +3,12 @@
 # docker compose -f docker-compose.dev.yaml exec mongo mongosh --eval "rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'localhost:27017'}]});"
 name: open-data-capture
 services:
-  mongo:
-    image: mongo:${MONGODB_VERSION}
-    command: --replSet rs0
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_PASSWORD}
     ports:
-      - '27017:27017'
-      - '28017:28017'
+      - '1433:1433'
     volumes:
-      - ./data/mongo:/data/db
+      - ./data/mssql:/var/opt/mssql

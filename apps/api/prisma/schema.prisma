@@ -13,226 +13,159 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Assignments
+// Enums
 
-enum AssignmentStatus {
-  CANCELED
-  COMPLETE
-  EXPIRED
-  OUTSTANDING
-}
-
-type EncryptionKeyPair {
-  publicKey  Bytes
-  privateKey Bytes
-}
+// Models
 
 model AssignmentModel {
-  createdAt         DateTime               @default(now()) @db.DateTime
-  updatedAt         DateTime               @updatedAt @db.DateTime
-  id                String                 @id @default(uuid()) @map("_id") @db.UniqueIdentifier
-  completedAt       DateTime?              @db.DateTime
-  expiresAt         DateTime               @db.DateTime
-  group             GroupModel?            @relation(fields: [groupId], references: [id])
-  groupId           String?                @db.UniqueIdentifier
-  instrument        InstrumentModel        @relation(fields: [instrumentId], references: [id])
-  instrumentId      String                 @db.UniqueIdentifier
-  instrumentRecord  InstrumentRecordModel? @relation(fields: [instrumentRecordId], references: [id])
-  instrumentRecordId String?               @db.UniqueIdentifier
-  status            AssignmentStatus
-  subject           SubjectModel           @relation(fields: [subjectId], references: [id])
-  subjectId         String                 @db.UniqueIdentifier
-  url               String                 @db.NVarChar(2048)
-  // encryptionKeyPair EncryptionKeyPair      @db.VarBinary(8000)
-}
-
-// Groups
-
-enum GroupType {
-  CLINICAL
-  RESEARCH
-}
-
-enum SubjectIdentificationMethod {
-  CUSTOM_ID
-  PERSONAL_INFO
-}
-
-type ErrorMessage {
-  en String?
-  fr String?
-}
-
-type GroupSettings {
-  defaultIdentificationMethod   SubjectIdentificationMethod
-  idValidationRegex             String?
-  idValidationRegexErrorMessage ErrorMessage?
+  assignmentModelId  Int                    @id @default(autoincrement()) @map("_id")
+  createdAt          DateTime               @default(now()) @db.DateTime
+  updatedAt          DateTime               @updatedAt @db.DateTime
+  completedAt        DateTime?              @db.DateTime
+  expiresAt          DateTime               @db.DateTime
+  groupId            Int?
+  group              GroupModel?            @relation(fields: [groupId], references: [groupId], onUpdate: NoAction, onDelete: NoAction)
+  instrumentId       String                 @db.UniqueIdentifier
+  instrument         InstrumentModel        @relation(fields: [assignmentModelId], references: [instrumentModelId], onUpdate: NoAction, onDelete: NoAction)
+  instrumentRecordId Int?                   @unique
+  instrumentRecord   InstrumentRecordModel? @relation(references: [instrumentRecordModelId])
+  status             String
+  subjectId          Int
+  subject            SubjectModel           @relation(fields: [assignmentModelId], references: [subjectModelId], onUpdate: NoAction, onDelete: NoAction)
+  url                String                 @db.NVarChar(2048)
 }
 
 model GroupModel {
-  createdAt               DateTime                @default(now()) @db.Date
-  updatedAt               DateTime                @updatedAt @db.Date
-  id                      String                  @id @default(auto()) @map("_id") @db.Uuid
-  name                    String                  @unique
-  settings                GroupSettings
-  type                    GroupType
-  accessibleInstruments   InstrumentModel[]       @relation("GroupInstrument", fields: [accessibleInstrumentIds], references: [id])
-  accessibleInstrumentIds String[]
-  assignments             AssignmentModel[]
-  instrumentRecords       InstrumentRecordModel[]
-  sessions                SessionModel[]
-  subjects                SubjectModel[]          @relation(fields: [subjectIds], references: [id])
-  subjectIds              String[]
-  userIds                 String[]                @db.Uuid
-  users                   UserModel[]             @relation(fields: [userIds], references: [id])
+  groupId                     Int                     @id @default(autoincrement()) @map("_id")
+  createdAt                   DateTime                @default(now()) @db.DateTime
+  updatedAt                   DateTime                @updatedAt @db.DateTime
+  name                        String                  @unique
+  groupType                   String
+  assignments                 AssignmentModel[]
+  instrumentRecords           InstrumentRecordModel[]
+  sessions                    SessionModel[]
+  subjects                    SubjectModel[]
+  users                       UserModel[]
+  groupsInstruments           GroupInstrument[]
+  InstrumentModel             InstrumentModel?        @relation(fields: [groupId], references: [instrumentModelId])
+  instrumentModelId           Int?
+  instrumentModelInstrumentId Int?
+
+  SubjectGroupModel                SubjectGroupModel[]
+  InstrumentModel                  InstrumentModel?    @relation(fields: [instrumentModelInstrumentModelId], references: [instrumentModelId])
+  instrumentModelInstrumentModelId Int?
+  SubjectModel                     SubjectModel?       @relation(fields: [subjectModelSubjectModelId], references: [subjectModelId])
+  subjectModelSubjectModelId       Int?
 }
 
 model GroupInstrument {
-  groupId       String
-  instrumentId  String
-  group         GroupModel   @relation(fields: [groupId], references: [id])
-  instrument    InstrumentModel @relation(fields: [instrumentId], references: [id])
-  @@id([groupId, instrumentId])
-}
-
-// Instrument Records
-
-model InstrumentRecordModel {
-  createdAt        DateTime         @default(now()) @db.Date
-  updatedAt        DateTime         @updatedAt @db.Date
-  id               String           @id @default(auto()) @map("_id") @db.Uuid
-  computedMeasures Json?
-  data             Json?
-  date             DateTime         @db.Date
-  group            GroupModel?      @relation(fields: [groupId], references: [id])
-  groupId          String?          @db.Uuid
-  subject          SubjectModel     @relation(fields: [subjectId], references: [id])
-  subjectId        String
-  instrument       InstrumentModel  @relation(fields: [instrumentId], references: [id])
-  instrumentId     String
-  assignment       AssignmentModel? @relation(fields: [assignmentId], references: [id])
-  assignmentId     String?          @unique
-  session          SessionModel     @relation(fields: [sessionId], references: [id])
-  sessionId        String           @db.Uuid
-}
-
-// Instruments
-
-enum InstrumentKind {
-  FORM
-  INTERACTIVE
-  SERIES
-}
-
-type InstrumentInternal {
-  name    String
-  edition Float
+  groupInstrumentId Int             @id @default(autoincrement()) @map("_id")
+  groupId           String          @db.UniqueIdentifier
+  group             GroupModel      @relation(fields: [groupId], references: [groupId])
+  instrumentId      Int
+  instrument        InstrumentModel @relation(fields: [groupInstrumentId], references: [instrumentModelId])
 }
 
 model InstrumentModel {
-  createdAt   DateTime                @default(now()) @db.Date
-  updatedAt   DateTime                @updatedAt @db.Date
-  id          String                  @id @map("_id")
-  assignments AssignmentModel[]
-  bundle      String
-  records     InstrumentRecordModel[]
-  groups      GroupModel[]            @relation("GroupInstrument", fields: [groupIds], references: [id])
-  groupIds    String[]                @db.Uuid
+  instrumentModelId Int                     @id @map("_id")
+  createdAt         DateTime                @default(now()) @db.DateTime
+  updatedAt         DateTime                @updatedAt @db.DateTime
+  assignments       AssignmentModel[]
+  bundle            String
+  records           InstrumentRecordModel[]
+  groups            GroupModel[]            @relation("GroupInstrument", fields: [instrumentModelId], references: [groupId])
+  GroupInstrument   GroupInstrument[]
+  GroupModel        GroupModel[]
+}
+
+model InstrumentRecordModel {
+  instrumentRecordModelId Int              @id @default(autoincrement()) @map("_id")
+  createdAt               DateTime         @default(now()) @db.DateTime
+  updatedAt               DateTime         @updatedAt @db.DateTime
+  computedMeasures        Json?
+  data                    Json?
+  date                    DateTime         @db.DateTime
+  groupId                 String?          @db.UniqueIdentifier
+  group                   GroupModel?      @relation(fields: [instrumentRecordModelId], references: [groupId])
+  subjectId               String
+  subject                 SubjectModel     @relation(fields: [instrumentRecordModelId], references: [subjectModelId])
+  instrumentId            String
+  instrument              InstrumentModel  @relation(fields: [instrumentRecordModelId], references: [instrumentModelId], onUpdate: NoAction, onDelete: NoAction)
+  assignmentModelId       Int?
+  assignment              AssignmentModel? @relation(fields: [assignmentModelId], references: [assignmentModelId])
+  sessionId               String           @db.UniqueIdentifier
+  session                 SessionModel     @relation(fields: [instrumentRecordModelId], references: [sessionModelId], onUpdate: NoAction, onDelete: NoAction)
 }
 
 // Subjects
 
-enum Sex {
-  MALE
-  FEMALE
-}
-
 model SubjectModel {
-  createdAt         DateTime                @default(now()) @db.Date
-  updatedAt         DateTime                @updatedAt @db.Date
-  id                String                  @id @map("_id")
-  dateOfBirth       DateTime?               @db.Date
+  subjectModelId    Int                     @id @default(autoincrement()) @map("_id") // Changed to Int and added @default(autoincrement())
+  createdAt         DateTime                @default(now()) @db.DateTime
+  updatedAt         DateTime                @updatedAt @db.DateTime
+  dateOfBirth       DateTime?               @db.DateTime
   firstName         String?
-  groupIds          String[]                @db.Uuid
-  groups            GroupModel[]            @relation(fields: [groupIds], references: [id])
   lastName          String?
+  sex               String? // Using String for sex
+  groups            GroupModel[]            @relation("SubjectGroupModels")
+  subjectsGroups    SubjectGroupModel[]
   sessions          SessionModel[]
-  sex               Sex?
   instrumentRecords InstrumentRecordModel[]
   assignments       AssignmentModel[]
+  GroupModel        GroupModel?             @relation(fields: [groupModelGroupId], references: [groupId])
+  groupModelGroupId Int?
 }
 
-enum BasePermissionLevel {
-  ADMIN
-  GROUP_MANAGER
-  STANDARD
+model SubjectGroupModel {
+  subjectGroupModelId Int          @id @default(autoincrement()) @map("_id")
+  subjectId           Int
+  groupId             Int
+  subject             SubjectModel @relation(fields: [subjectGroupModelId], references: [subjectModelId])
+  group               GroupModel   @relation(fields: [groupId], references: [groupId])
+
+  @@unique([subjectId, groupId])
 }
 
-enum AppSubject {
-  all
-  Assignment
-  Group
-  Instrument
-  InstrumentRecord
-  Session
-  Subject
-  User
-}
+// User Roles and Permissions
 
-enum AppAction {
-  create
-  delete
-  manage
-  read
-  update
-}
-
-type AuthRule {
-  action  AppAction
-  subject AppSubject
-}
+// Users
 
 model UserModel {
-  createdAt             DateTime             @default(now()) @db.Date
-  updatedAt             DateTime             @updatedAt @db.Date
-  id                    String               @id @default(auto()) @map("_id") @db.Uuid
-  basePermissionLevel   BasePermissionLevel?
-  additionalPermissions AuthRule[]
+  id                    Int          @id @default(autoincrement()) @map("_id")
+  createdAt             DateTime     @default(now()) @db.DateTime
+  updatedAt             DateTime     @updatedAt @db.DateTime
+  basePermissionLevel   String?
+  additionalPermissions String[]
   firstName             String
-  groupIds              String[]             @db.Uuid
-  groups                GroupModel[]         @relation(fields: [groupIds], references: [id])
   lastName              String
   password              String
   username              String
-  sex                   Sex?
-  dateOfBirth           DateTime?            @db.Date
+  sex                   String?
+  dateOfBirth           DateTime?    @db.DateTime
+  groups                GroupModel[] @relation(fields: [groupIds], references: [groupId])
+  groupIds              String[]     @db.Uuid
 }
 
-enum SessionType {
-  RETROSPECTIVE
-  IN_PERSON
-  REMOTE
-}
-
+// Sessions
 model SessionModel {
-  createdAt         DateTime                @default(now()) @db.Date
-  updatedAt         DateTime                @updatedAt @db.Date
-  id                String                  @id @default(auto()) @map("_id") @db.Uuid
-  date              DateTime                @db.Date
-  group             GroupModel?             @relation(fields: [groupId], references: [id])
-  groupId           String?                 @db.Uuid
+  sessionModelId    Int                     @id @default(autoincrement()) @map("_id")
+  createdAt         DateTime                @default(now()) @db.DateTime
+  updatedAt         DateTime                @updatedAt @db.DateTime
+  date              DateTime                @db.DateTime
+  groupId           String?                 @db.UniqueIdentifier
+  group             GroupModel?             @relation(fields: [sessionModelId], references: [groupId])
+  subjectId         Int
+  subject           SubjectModel            @relation(fields: [subjectId], references: [subjectModelId])
+  type              String
   instrumentRecords InstrumentRecordModel[]
-  subject           SubjectModel            @relation(fields: [subjectId], references: [id])
-  subjectId         String
-  type              SessionType
 }
 
 // Setup
 
 model SetupStateModel {
-  createdAt                     DateTime @default(now()) @db.Date
-  updatedAt                     DateTime @updatedAt @db.Date
-  id                            String   @id @default(auto()) @map("_id") @db.Uuid
+  id                            Int      @id @default(autoincrement()) @map("_id")
+  createdAt                     DateTime @default(now()) @db.DateTime
+  updatedAt                     DateTime @updatedAt @db.DateTime
   isDemo                        Boolean
   isExperimentalFeaturesEnabled Boolean?
   isSetup                       Boolean

@@ -22,14 +22,15 @@ export const $Configuration = z
     GATEWAY_INTERNAL_NETWORK_URL: $OptionalURL,
     GATEWAY_REFRESH_INTERVAL: z.coerce.number().positive().int(),
     GATEWAY_SITE_ADDRESS: $OptionalURL,
-    MONGO_DIRECT_CONNECTION: z.string().optional(),
-    MONGO_REPLICA_SET: z.string().optional(),
-    MONGO_RETRY_WRITES: z.string().optional(),
-    MONGO_URI: z
+    SQLSERVER_CONNECTION_STRING: z
       .string()
       .url()
       .transform((arg) => new URL(arg)),
-    MONGO_WRITE_CONCERN: z.string().optional(),
+    SQLSERVER_DATABASE: z.string(),
+    SQLSERVER_HOST: z.string(),
+    SQLSERVER_PASSWORD: z.string(),
+    SQLSERVER_PORT: z.coerce.number().positive().int(),
+    SQLSERVER_USER: z.string(),
     NODE_ENV: z.enum(['development', 'production', 'test']),
     SECRET_KEY: z.string().min(32),
     THROTTLER_ENABLED: $BooleanString.default(true),

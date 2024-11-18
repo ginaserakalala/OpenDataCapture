@@ -25,10 +25,10 @@ model AssignmentModel {
   expiresAt          DateTime               @db.DateTime
   groupId            Int?
   group              GroupModel?            @relation(fields: [groupId], references: [groupId], onUpdate: NoAction, onDelete: NoAction)
-  instrumentId       String                 @db.UniqueIdentifier
-  instrument         InstrumentModel        @relation(fields: [assignmentModelId], references: [instrumentModelId], onUpdate: NoAction, onDelete: NoAction)
+  instrumentId       Int
+  instrument         InstrumentModel        @relation(fields: [instrumentId], references: [instrumentModelId], onUpdate: NoAction, onDelete: NoAction)
   instrumentRecordId Int?                   @unique
-  instrumentRecord   InstrumentRecordModel? @relation(references: [instrumentRecordModelId])
+  instrumentRecord   InstrumentRecordModel?
   status             String
   subjectId          Int
   subject            SubjectModel           @relation(fields: [assignmentModelId], references: [subjectModelId], onUpdate: NoAction, onDelete: NoAction)
@@ -36,71 +36,85 @@ model AssignmentModel {
 }
 
 model GroupModel {
-  groupId                     Int                     @id @default(autoincrement()) @map("_id")
-  createdAt                   DateTime                @default(now()) @db.DateTime
-  updatedAt                   DateTime                @updatedAt @db.DateTime
-  name                        String                  @unique
-  groupType                   String
-  assignments                 AssignmentModel[]
-  instrumentRecords           InstrumentRecordModel[]
-  sessions                    SessionModel[]
-  subjects                    SubjectModel[]
-  users                       UserModel[]
-  groupsInstruments           GroupInstrument[]
-  InstrumentModel             InstrumentModel?        @relation(fields: [groupId], references: [instrumentModelId])
-  instrumentModelId           Int?
-  instrumentModelInstrumentId Int?
+  groupId           Int                     @id @default(autoincrement()) @map("_id")
+  createdAt         DateTime                @default(now()) @db.DateTime
+  updatedAt         DateTime                @updatedAt @db.DateTime
+  name              String                  @unique
+  groupType         String
+  assignments       AssignmentModel[]
+  instrumentRecords InstrumentRecordModel[]
+  sessions          SessionModel[]
+  subjects          SubjectGroupModel[]     @relation("GroupSubjectRelation")
+  users             UserGroupModel[]        @relation("UserGroupRelation")
+  groupsInstruments GroupInstrument[]
+  instrumentModelId Int?
+  instrumentModel   InstrumentModel?        @relation(fields: [instrumentModelId], references: [instrumentModelId], onUpdate: NoAction, onDelete: NoAction)
 
-  SubjectGroupModel                SubjectGroupModel[]
-  InstrumentModel                  InstrumentModel?    @relation(fields: [instrumentModelInstrumentModelId], references: [instrumentModelId])
-  instrumentModelInstrumentModelId Int?
-  SubjectModel                     SubjectModel?       @relation(fields: [subjectModelSubjectModelId], references: [subjectModelId])
-  subjectModelSubjectModelId       Int?
+  SubjectGroupModel SubjectGroupModel[]
+
+  UserGroupModel UserGroupModel[]
+
+  SubjectModel SubjectModel[] @relation("SubjectGroupModels")
+}
+
+model UserGroupModel {
+  userGroupModelId Int          @id @default(autoincrement()) @map("_id")
+  userId           Int
+  groupId          Int
+  user             UserModel    @relation(fields: [userId], references: [id])
+  group            GroupModel   @relation(fields: [groupId], references: [groupId])
+  UserModel        UserModel[]  @relation("UserGroupRelation")
+  GroupModel       GroupModel[] @relation("UserGroupRelation")
+
+  @@unique([userId, groupId])
 }
 
 model GroupInstrument {
   groupInstrumentId Int             @id @default(autoincrement()) @map("_id")
-  groupId           String          @db.UniqueIdentifier
+  groupId           Int
   group             GroupModel      @relation(fields: [groupId], references: [groupId])
   instrumentId      Int
-  instrument        InstrumentModel @relation(fields: [groupInstrumentId], references: [instrumentModelId])
+  instrument        InstrumentModel @relation(fields: [instrumentId], references: [instrumentModelId])
+
+  InstrumentModel InstrumentModel[] @relation(name: "GroupInstruments")
 }
 
 model InstrumentModel {
-  instrumentModelId Int                     @id @map("_id")
+  instrumentModelId Int                     @id @default(autoincrement()) @map("_id")
   createdAt         DateTime                @default(now()) @db.DateTime
   updatedAt         DateTime                @updatedAt @db.DateTime
   assignments       AssignmentModel[]
   bundle            String
   records           InstrumentRecordModel[]
-  groups            GroupModel[]            @relation("GroupInstrument", fields: [instrumentModelId], references: [groupId])
+  groups            GroupInstrument[]       @relation(name: "GroupInstruments")
   GroupInstrument   GroupInstrument[]
   GroupModel        GroupModel[]
 }
 
 model InstrumentRecordModel {
-  instrumentRecordModelId Int              @id @default(autoincrement()) @map("_id")
-  createdAt               DateTime         @default(now()) @db.DateTime
-  updatedAt               DateTime         @updatedAt @db.DateTime
-  computedMeasures        Json?
-  data                    Json?
-  date                    DateTime         @db.DateTime
-  groupId                 String?          @db.UniqueIdentifier
-  group                   GroupModel?      @relation(fields: [instrumentRecordModelId], references: [groupId])
-  subjectId               String
-  subject                 SubjectModel     @relation(fields: [instrumentRecordModelId], references: [subjectModelId])
-  instrumentId            String
-  instrument              InstrumentModel  @relation(fields: [instrumentRecordModelId], references: [instrumentModelId], onUpdate: NoAction, onDelete: NoAction)
-  assignmentModelId       Int?
-  assignment              AssignmentModel? @relation(fields: [assignmentModelId], references: [assignmentModelId])
-  sessionId               String           @db.UniqueIdentifier
-  session                 SessionModel     @relation(fields: [instrumentRecordModelId], references: [sessionModelId], onUpdate: NoAction, onDelete: NoAction)
+  instrumentRecordModelId Int      @id @default(autoincrement()) @map("_id")
+  createdAt               DateTime @default(now()) @db.DateTime
+  updatedAt               DateTime @updatedAt @db.DateTime
+  computedMeasures        String?
+  data                    String?
+  date                    DateTime @db.DateTime
+  groupId                 Int?
+
+  group             GroupModel?      @relation(fields: [groupId], references: [groupId])
+  subjectId         Int
+  subject           SubjectModel     @relation(fields: [subjectId], references: [subjectModelId])
+  instrumentId      Int
+  instrument        InstrumentModel  @relation(fields: [instrumentId], references: [instrumentModelId], onUpdate: NoAction, onDelete: NoAction)
+  assignmentModelId Int?             @unique
+  assignment        AssignmentModel? @relation(fields: [assignmentModelId], references: [assignmentModelId], onUpdate: NoAction, onDelete: NoAction)
+  sessionId         Int
+  session           SessionModel     @relation(fields: [sessionId], references: [sessionModelId], onUpdate: NoAction, onDelete: NoAction)
 }
 
 // Subjects
 
 model SubjectModel {
-  subjectModelId    Int                     @id @default(autoincrement()) @map("_id") // Changed to Int and added @default(autoincrement())
+  subjectModelId    Int                     @id @default(autoincrement()) @map("_id")
   createdAt         DateTime                @default(now()) @db.DateTime
   updatedAt         DateTime                @updatedAt @db.DateTime
   dateOfBirth       DateTime?               @db.DateTime
@@ -112,8 +126,6 @@ model SubjectModel {
   sessions          SessionModel[]
   instrumentRecords InstrumentRecordModel[]
   assignments       AssignmentModel[]
-  GroupModel        GroupModel?             @relation(fields: [groupModelGroupId], references: [groupId])
-  groupModelGroupId Int?
 }
 
 model SubjectGroupModel {
@@ -122,6 +134,7 @@ model SubjectGroupModel {
   groupId             Int
   subject             SubjectModel @relation(fields: [subjectGroupModelId], references: [subjectModelId])
   group               GroupModel   @relation(fields: [groupId], references: [groupId])
+  GroupModel          GroupModel[] @relation("GroupSubjectRelation")
 
   @@unique([subjectId, groupId])
 }
@@ -131,19 +144,29 @@ model SubjectGroupModel {
 // Users
 
 model UserModel {
-  id                    Int          @id @default(autoincrement()) @map("_id")
-  createdAt             DateTime     @default(now()) @db.DateTime
-  updatedAt             DateTime     @updatedAt @db.DateTime
-  basePermissionLevel   String?
-  additionalPermissions String[]
-  firstName             String
-  lastName              String
-  password              String
-  username              String
-  sex                   String?
-  dateOfBirth           DateTime?    @db.DateTime
-  groups                GroupModel[] @relation(fields: [groupIds], references: [groupId])
-  groupIds              String[]     @db.Uuid
+  id                  Int              @id @default(autoincrement()) @map("_id")
+  createdAt           DateTime         @default(now()) @db.DateTime
+  updatedAt           DateTime         @updatedAt @db.DateTime
+  basePermissionLevel String?
+  firstName           String
+  lastName            String
+  password            String
+  username            String
+  sex                 String?
+  dateOfBirth         DateTime?        @db.DateTime
+  groups              UserGroupModel[] @relation("UserGroupRelation")
+  permissions         UserPermission[]
+
+  UserGroupModel UserGroupModel[]
+}
+
+model UserPermission {
+  id         Int       @id @default(autoincrement()) @map("_id")
+  userId     Int
+  permission String
+  user       UserModel @relation(fields: [userId], references: [id])
+
+  @@unique([userId, permission])
 }
 
 // Sessions
@@ -152,8 +175,8 @@ model SessionModel {
   createdAt         DateTime                @default(now()) @db.DateTime
   updatedAt         DateTime                @updatedAt @db.DateTime
   date              DateTime                @db.DateTime
-  groupId           String?                 @db.UniqueIdentifier
-  group             GroupModel?             @relation(fields: [sessionModelId], references: [groupId])
+  groupId           Int?
+  group             GroupModel?             @relation(fields: [groupId], references: [groupId])
   subjectId         Int
   subject           SubjectModel            @relation(fields: [subjectId], references: [subjectModelId])
   type              String

@@ -1,14 +1,15 @@
 # See https://github.com/prisma/prisma/issues/8266
 # docker compose -f docker-compose.dev.yaml up -d
-# docker compose -f docker-compose.dev.yaml exec mongo mongosh --eval "rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'localhost:27017'}]});"
+
 name: open-data-capture
 services:
-  mssql:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+  postgres:
+    image: postgres:15
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=${MSSQL_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER} # Username for PostgreSQL
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # Password for PostgreSQL
+      POSTGRES_DB: ${POSTGRES_DB} # Default database to create
     ports:
-      - '1433:1433'
+      - '5432:5432' # Expose PostgreSQL on default port
     volumes:
-      - ./data/mssql:/var/opt/mssql
+      - ./data/postgres:/var/lib/postgresql/data:rw # Persistent data volume for PostgreSQL

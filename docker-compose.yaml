@@ -1,7 +1,7 @@
 name: open-data-capture
 volumes:
   caddy_data:
-  mssql_data:
+  postgres_data: # Volume for PostgreSQL data
 services:
   caddy:
     image: caddy:2.7-alpine
@@ -13,6 +13,9 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
+    profiles:
+      - '' #load by default without having to specify docker compose --profile
+      - gateway
   api:
     image: ghcr.io/douglasneuroinformatics/open-data-capture-api:${RELEASE_CHANNEL}
     build:
@@ -21,14 +24,14 @@ services:
       args:
         - RELEASE_VERSION
     depends_on:
-      - mssql
+      - postgres # Replacing mongo with postgres
     restart: unless-stopped
     environment:
       - GATEWAY_INTERNAL_NETWORK_URL=http://gateway:80
-      - MSSQL_PORT=1433
-      - MSSQL_USER=testuser
-      - MSSQL_PASSWORD=${MSSQL_PASSWORD}
-      - MSSQL_DATABASE=${MSSQL_DATABASE}
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DATABASE=${POSTGRES_DB}
       - NODE_ENV=production
       - DANGEROUSLY_DISABLE_PBKDF2_ITERATION
       - DEBUG
@@ -41,6 +44,8 @@ services:
       - VERBOSE
     expose:
       - 80
+    profiles:
+      - '' #load by default without having to specify docker compose --profile
   gateway:
     image: ghcr.io/douglasneuroinformatics/open-data-capture-gateway:${RELEASE_CHANNEL}
     build:
@@ -52,6 +57,9 @@ services:
       - ${GATEWAY_PORT}:80
     expose:
       - 80
+    profiles:
+      - '' #load by default without having to specify docker compose --profile
+      - gateway
     restart: unless-stopped
     environment:
       - NODE_ENV=production
@@ -74,16 +82,21 @@ services:
       - PLAUSIBLE_WEB_DATA_DOMAIN
     expose:
       - 80
+    profiles:
+      - '' #load by default without having to specify docker compose --profile
     restart: unless-stopped
-  mssql:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+  postgres: # Replacing mongo service with postgres
+    image: postgres:15
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=${MSSQL_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - '1433:1433'
+      - '5432:5432'
     expose:
-      - 1433
+      - 5432
     restart: unless-stopped
     volumes:
-      - ./data/mssql:/var/opt/mssql
+      - ./data/postgres:/var/lib/postgresql/data:rw
+    profiles:
+      - '' #load by default without having to specify docker compose --profile

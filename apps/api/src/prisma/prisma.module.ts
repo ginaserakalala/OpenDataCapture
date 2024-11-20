@@ -29,6 +29,7 @@ export class PrismaModule {
       ]
     };
   }
+
   static forRoot(): DynamicModule {
     this.logger.debug('Applying root configuration...');
     return {
@@ -40,22 +41,9 @@ export class PrismaModule {
           inject: [ConfigurationService],
           provide: PRISMA_CLIENT_TOKEN,
           useFactory: (configurationService: ConfigurationService) => {
-            const mongoUri = configurationService.get('MONGO_URI');
-            const dbName = configurationService.get('NODE_ENV');
-            const url = new URL(`${mongoUri.href}/data-capture-${dbName}`);
-            const params = {
-              directConnection: configurationService.get('MONGO_DIRECT_CONNECTION'),
-              replicaSet: configurationService.get('MONGO_REPLICA_SET'),
-              retryWrites: configurationService.get('MONGO_RETRY_WRITES'),
-              w: configurationService.get('MONGO_WRITE_CONCERN')
-            };
-            for (const [key, value] of Object.entries(params)) {
-              if (value) {
-                url.searchParams.append(key, value);
-              }
-            }
-            this.logger.debug(`Attempting to create client with data source: '${url.href}'`);
-            return PrismaFactory.createClient({ datasourceUrl: url.href });
+            const databaseUrl = `sqlserver://${configurationService.get('MSSQL_USER')}:${configurationService.get('MSSQL_PASSWORD')}@${configurationService.get('MSSQL_HOST')}:${configurationService.get('MSSQL_PORT')};database=${configurationService.get('MSSQL_DATABASE')}`;
+            this.logger.debug(`Attempting to create client with data source: '${databaseUrl}'`);
+            return PrismaFactory.createClient({ datasourceUrl: databaseUrl });
           }
         },
         PrismaService

@@ -22,15 +22,11 @@ export const $Configuration = z
     GATEWAY_INTERNAL_NETWORK_URL: $OptionalURL,
     GATEWAY_REFRESH_INTERVAL: z.coerce.number().positive().int(),
     GATEWAY_SITE_ADDRESS: $OptionalURL,
-    SQLSERVER_CONNECTION_STRING: z
-      .string()
-      .url()
-      .transform((arg) => new URL(arg)),
-    SQLSERVER_DATABASE: z.string(),
-    SQLSERVER_HOST: z.string(),
-    SQLSERVER_PASSWORD: z.string(),
-    SQLSERVER_PORT: z.coerce.number().positive().int(),
-    SQLSERVER_USER: z.string(),
+    POSTGRES_HOST: z.string(),
+    POSTGRES_PORT: z.coerce.number().positive().int(),
+    POSTGRES_USER: z.string(),
+    POSTGRES_PASSWORD: z.string(),
+    POSTGRES_DB: z.string(),
     NODE_ENV: z.enum(['development', 'production', 'test']),
     SECRET_KEY: z.string().min(32),
     THROTTLER_ENABLED: $BooleanString.default(true),
@@ -58,6 +54,7 @@ export const $Configuration = z
         });
       }
     }
+    // Additional validation for PostgreSQL configuration can be added if needed
   });
 
 export type Configuration = z.infer<typeof $Configuration>;

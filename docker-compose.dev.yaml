@@ -13,3 +13,35 @@ services:
       - '5432:5432' # Expose PostgreSQL on default port
     volumes:
       - ./data/postgres:/var/lib/postgresql/data:rw # Persistent data volume for PostgreSQL
+
+  api:
+    image: ghcr.io/douglasneuroinformatics/open-data-capture-api:${RELEASE_CHANNEL}
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+      args:
+        - RELEASE_VERSION=${RELEASE_VERSION}
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    environment:
+      - GATEWAY_INTERNAL_NETWORK_URL=http://gateway:80
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - NODE_ENV=development # Typically 'development'
+      - DANGEROUSLY_DISABLE_PBKDF2_ITERATION=${DANGEROUSLY_DISABLE_PBKDF2_ITERATION}
+      - DEBUG=${DEBUG}
+      - GATEWAY_API_KEY=${GATEWAY_API_KEY}
+      - GATEWAY_ENABLED=${GATEWAY_ENABLED}
+      - GATEWAY_REFRESH_INTERVAL=${GATEWAY_REFRESH_INTERVAL}
+      - GATEWAY_SITE_ADDRESS=${GATEWAY_SITE_ADDRESS}
+      - SECRET_KEY=${SECRET_KEY}
+      - THROTTLER_ENABLED=${THROTTLER_ENABLED}
+      - VERBOSE=${VERBOSE}
+      - DATABASE_URL=${DATABASE_URL}
+    ports:
+      - '5500:5500' # Ensure you map the correct port for development
+    profiles:
+      - dev

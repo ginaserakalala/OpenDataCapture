@@ -41,7 +41,7 @@ export class PrismaModule {
           inject: [ConfigurationService],
           provide: PRISMA_CLIENT_TOKEN,
           useFactory: (configurationService: ConfigurationService) => {
-            const databaseUrl = `sqlserver://${configurationService.get('MSSQL_USER')}:${configurationService.get('MSSQL_PASSWORD')}@${configurationService.get('MSSQL_HOST')}:${configurationService.get('MSSQL_PORT')};database=${configurationService.get('MSSQL_DATABASE')}`;
+            const databaseUrl = configurationService.get('DATABASE_URL');
             this.logger.debug(`Attempting to create client with data source: '${databaseUrl}'`);
             return PrismaFactory.createClient({ datasourceUrl: databaseUrl });
           }

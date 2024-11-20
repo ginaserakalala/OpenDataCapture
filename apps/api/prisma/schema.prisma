@@ -19,7 +19,7 @@ enum AssignmentStatus {
 }
 
 model EncryptionKeyPair {
-  id         String @id @default(uuid())
+  id         String @id @default(uuid()) @db.Uuid
   publicKey  Bytes
   privateKey Bytes
 
@@ -33,13 +33,13 @@ model AssignmentModel {
   completedAt         DateTime?
   expiresAt           DateTime
   group               GroupModel?            @relation(fields: [groupId], references: [id])
-  groupId             String?                @db.Uuid
+  groupId             String                 @db.Uuid
   instrument          InstrumentModel        @relation(fields: [instrumentId], references: [id])
-  instrumentId        String
+  instrumentId        String                 @db.Uuid
   instrumentRecord    InstrumentRecordModel?
   status              AssignmentStatus
   subject             SubjectModel           @relation(fields: [subjectId], references: [id])
-  subjectId           String
+  subjectId           String                 @db.Uuid
   url                 String
   encryptionKeyPairId String?                @db.Uuid
   encryptionKeyPair   EncryptionKeyPair?     @relation(fields: [encryptionKeyPairId], references: [id])
@@ -58,7 +58,7 @@ enum SubjectIdentificationMethod {
 }
 
 model ErrorMessage {
-  id String  @id @default(uuid())
+  id String  @id @default(uuid()) @db.Uuid
   en String?
   fr String?
 
@@ -66,7 +66,7 @@ model ErrorMessage {
 }
 
 model GroupSettings {
-  id                              String                      @id @default(uuid())
+  id                              String                      @id @default(uuid()) @db.Uuid
   defaultIdentificationMethod     SubjectIdentificationMethod
   idValidationRegex               String?
   idValidationRegexErrorMessageId String?                     @db.Uuid
@@ -101,16 +101,16 @@ model GroupModel {
 model InstrumentRecordModel {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
-  id               String           @id @default(uuid())
+  id               String           @id @default(uuid()) @db.Uuid
   computedMeasures Json?
   data             Json?
   date             DateTime
   group            GroupModel?      @relation(fields: [groupId], references: [id])
   groupId          String?          @db.Uuid
   subject          SubjectModel     @relation(fields: [subjectId], references: [id])
-  subjectId        String
+  subjectId        String           @db.Uuid
   instrument       InstrumentModel  @relation(fields: [instrumentId], references: [id])
-  instrumentId     String
+  instrumentId     String           @db.Uuid
   assignment       AssignmentModel? @relation(fields: [assignmentId], references: [id])
   assignmentId     String?          @unique
   session          SessionModel     @relation(fields: [sessionId], references: [id])
@@ -136,7 +136,7 @@ model InstrumentInternal {
 model InstrumentModel {
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
-  id          String                  @id @default(uuid())
+  id          String                  @id @default(uuid()) @db.Uuid
   assignments AssignmentModel[]
   bundle      String
   groups      GroupModel[]            @relation("AccessibleInstruments")
@@ -156,7 +156,7 @@ enum Sex {
 model SubjectModel {
   createdAt         DateTime                @default(now())
   updatedAt         DateTime                @updatedAt
-  id                String                  @id @default(uuid())
+  id                String                  @id @default(uuid()) @db.Uuid
   dateOfBirth       DateTime?
   firstName         String?
   groupIds          String[]                @db.Uuid
@@ -232,13 +232,13 @@ enum SessionType {
 model SessionModel {
   createdAt         DateTime                @default(now())
   updatedAt         DateTime                @updatedAt
-  id                String                  @id @default(uuid())
+  id                String                  @id @default(uuid()) @db.Uuid
   date              DateTime
   group             GroupModel?             @relation(fields: [groupId], references: [id])
   groupId           String?                 @db.Uuid
   instrumentRecords InstrumentRecordModel[]
   subject           SubjectModel            @relation(fields: [subjectId], references: [id])
-  subjectId         String
+  subjectId         String                  @db.Uuid
   type              SessionType
 }
 

@@ -8,6 +8,7 @@ import { aboutRoute } from './features/about';
 import { adminRoute } from './features/admin';
 import { authRoutes } from './features/auth';
 import { contactRoute } from './features/contact';
+import { demographicsRoute } from './features/demographics';
 import { dashboardRoute } from './features/dashboard';
 import { datahubRoute } from './features/datahub';
 import { groupRoute } from './features/group';
@@ -47,7 +48,8 @@ const protectedRoutes: RouteObject[] = [
       instrumentsRoute,
       sessionRoute,
       userRoute,
-      uploadRoute
+      uploadRoute,
+      demographicsRoute
     ]
   }
 ];

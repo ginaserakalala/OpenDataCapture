@@ -20,22 +20,21 @@ export class PrismaService implements OnModuleInit, OnApplicationShutdown {
     private readonly configurationService: ConfigurationService
   ) {}
 
+  // Replace MongoDB-specific dropDatabase with a PostgreSQL-compatible solution
   async dropDatabase() {
     this.logger.debug('Attempting to drop database...');
-    const result = await this.client.$runCommandRaw({
-      dropDatabase: 1
-    });
-    if (result.ok !== 1) {
-      throw new InternalServerErrorException('Failed to drop database: raw mongodb command returned unexpected value', {
-        cause: result
-      });
+    try {
+      await this.client.$queryRaw`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`;
+      this.logger.debug('Successfully dropped database');
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to drop database: ' + { cause: error });
     }
-    this.logger.debug('Successfully dropped database');
   }
 
+  // Replace MongoDB-specific dbStats with a PostgreSQL-compatible solution
   async getDbName() {
     this.logger.debug('Attempting to get database name...');
-    const dbName = await this.client.$runCommandRaw({ dbStats: 1 }).then((stats) => stats.db as string);
+    const dbName = await this.client.$queryRaw`SELECT current_database()`;
     this.logger.debug(`Resolved database name: ${dbName}`);
     return dbName;
   }

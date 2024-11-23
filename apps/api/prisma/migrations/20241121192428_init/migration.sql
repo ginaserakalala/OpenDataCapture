@@ -189,6 +189,138 @@ CREATE TABLE "SetupStateModel" (
 );
 
 -- CreateTable
+CREATE TABLE "HealthScreenings" (
+    "Screening_ID" SERIAL NOT NULL,
+    "Child_ID" INTEGER NOT NULL,
+    "Worker_ID" INTEGER NOT NULL,
+    "Screening_Date" TIMESTAMP(3) NOT NULL,
+    "Station" TEXT NOT NULL,
+    "Created_At" TIMESTAMP(3) NOT NULL,
+    "Updated_At" TIMESTAMP(3) NOT NULL,
+    "Created_By" INTEGER NOT NULL,
+    "Updated_By" INTEGER NOT NULL,
+
+    CONSTRAINT "HealthScreenings_pkey" PRIMARY KEY ("Screening_ID")
+);
+
+-- CreateTable
+CREATE TABLE "Eyes" (
+    "Screening_ID" SERIAL NOT NULL,
+    "Discharge" BOOLEAN NOT NULL,
+    "Inflammation" BOOLEAN NOT NULL,
+    "Squint" BOOLEAN NOT NULL,
+    "Other_Abnormality" BOOLEAN NOT NULL,
+
+    CONSTRAINT "Eyes_pkey" PRIMARY KEY ("Screening_ID")
+);
+
+-- CreateTable
+CREATE TABLE "Vision" (
+    "Screening_ID" SERIAL NOT NULL,
+    "Wears_Glasses" BOOLEAN NOT NULL,
+    "NPC_Over_6cm" BOOLEAN NOT NULL,
+    "Right_Eye_No_Glasses" TEXT NOT NULL,
+    "Left_Eye_No_Glasses" TEXT NOT NULL,
+    "Right_Eye_With_Glasses" TEXT NOT NULL,
+    "Left_Eye_With_Glasses" TEXT NOT NULL,
+
+    CONSTRAINT "Vision_pkey" PRIMARY KEY ("Screening_ID")
+);
+
+-- CreateTable
+CREATE TABLE "OralHealth" (
+    "Screening_ID" SERIAL NOT NULL,
+    "Dental_Caries" BOOLEAN NOT NULL,
+    "Gum_Disease" BOOLEAN NOT NULL,
+    "Thrush_Sores" BOOLEAN NOT NULL,
+    "Other_Abnormality" BOOLEAN NOT NULL,
+
+    CONSTRAINT "OralHealth_pkey" PRIMARY KEY ("Screening_ID")
+);
+
+-- CreateTable
+CREATE TABLE "Ear" (
+    "Screening_ID" SERIAL NOT NULL,
+    "Discharge" TEXT NOT NULL,
+    "Wax_Impaction" TEXT NOT NULL,
+    "Inflamed_Eardrum" TEXT NOT NULL,
+    "Other_Abnormality" TEXT NOT NULL,
+    "Wears_Hearing_Aid" BOOLEAN NOT NULL,
+
+    CONSTRAINT "Ear_pkey" PRIMARY KEY ("Screening_ID")
+);
+
+-- CreateTable
+CREATE TABLE "Children" (
+    "Child_ID" SERIAL NOT NULL,
+    "Name" TEXT NOT NULL,
+    "Date_of_Birth" TIMESTAMP(3) NOT NULL,
+    "Age" INTEGER NOT NULL,
+    "School_ID" INTEGER NOT NULL,
+    "Grade" TEXT NOT NULL,
+    "Consent_Received" BOOLEAN NOT NULL,
+    "Session_ID" INTEGER NOT NULL,
+
+    CONSTRAINT "Children_pkey" PRIMARY KEY ("Child_ID")
+);
+
+-- CreateTable
+CREATE TABLE "HealthCareWorkers" (
+    "Worker_ID" SERIAL NOT NULL,
+    "Worker_Name" TEXT NOT NULL,
+    "Assigned_Area" TEXT NOT NULL,
+
+    CONSTRAINT "HealthCareWorkers_pkey" PRIMARY KEY ("Worker_ID")
+);
+
+-- CreateTable
+CREATE TABLE "Schools" (
+    "School_ID" SERIAL NOT NULL,
+    "School_Name" TEXT NOT NULL,
+
+    CONSTRAINT "Schools_pkey" PRIMARY KEY ("School_ID")
+);
+
+-- CreateTable
+CREATE TABLE "UserAccounts" (
+    "User_ID" SERIAL NOT NULL,
+    "Worker_ID" INTEGER NOT NULL,
+    "Username" TEXT NOT NULL,
+    "Password_Hash" TEXT NOT NULL,
+    "Role_ID" INTEGER NOT NULL,
+
+    CONSTRAINT "UserAccounts_pkey" PRIMARY KEY ("User_ID")
+);
+
+-- CreateTable
+CREATE TABLE "UserRoles" (
+    "Role_ID" SERIAL NOT NULL,
+    "Role_Name" TEXT NOT NULL,
+
+    CONSTRAINT "UserRoles_pkey" PRIMARY KEY ("Role_ID")
+);
+
+-- CreateTable
+CREATE TABLE "ConsentForms" (
+    "Consent_ID" SERIAL NOT NULL,
+    "Child_ID" INTEGER NOT NULL,
+    "Worker_ID" INTEGER NOT NULL,
+    "Uploaded_Date" TIMESTAMP(3) NOT NULL,
+    "Consent_Status" BOOLEAN NOT NULL,
+
+    CONSTRAINT "ConsentForms_pkey" PRIMARY KEY ("Consent_ID")
+);
+
+-- CreateTable
+CREATE TABLE "ScreeningSession" (
+    "Session_ID" SERIAL NOT NULL,
+    "Session_Date" TIMESTAMP(3) NOT NULL,
+    "School_ID" INTEGER NOT NULL,
+
+    CONSTRAINT "ScreeningSession_pkey" PRIMARY KEY ("Session_ID")
+);
+
+-- CreateTable
 CREATE TABLE "_AccessibleInstruments" (
     "A" UUID NOT NULL,
     "B" UUID NOT NULL
@@ -295,6 +427,45 @@ ALTER TABLE "SessionModel" ADD CONSTRAINT "SessionModel_groupId_fkey" FOREIGN KE
 
 -- AddForeignKey
 ALTER TABLE "SessionModel" ADD CONSTRAINT "SessionModel_subjectId_fkey" FOREIGN KEY ("subjectId") REFERENCES "SubjectModel"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "HealthScreenings" ADD CONSTRAINT "HealthScreenings_Child_ID_fkey" FOREIGN KEY ("Child_ID") REFERENCES "Children"("Child_ID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "HealthScreenings" ADD CONSTRAINT "HealthScreenings_Worker_ID_fkey" FOREIGN KEY ("Worker_ID") REFERENCES "HealthCareWorkers"("Worker_ID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Eyes" ADD CONSTRAINT "Eyes_Screening_ID_fkey" FOREIGN KEY ("Screening_ID") REFERENCES "HealthScreenings"("Screening_ID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Vision" ADD CONSTRAINT "Vision_Screening_ID_fkey" FOREIGN KEY ("Screening_ID") REFERENCES "HealthScreenings"("Screening_ID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OralHealth" ADD CONSTRAINT "OralHealth_Screening_ID_fkey" FOREIGN KEY ("Screening_ID") REFERENCES "HealthScreenings"("Screening_ID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Ear" ADD CONSTRAINT "Ear_Screening_ID_fkey" FOREIGN KEY ("Screening_ID") REFERENCES "HealthScreenings"("Screening_ID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Children" ADD CONSTRAINT "Children_School_ID_fkey" FOREIGN KEY ("School_ID") REFERENCES "Schools"("School_ID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Children" ADD CONSTRAINT "Children_Session_ID_fkey" FOREIGN KEY ("Session_ID") REFERENCES "ScreeningSession"("Session_ID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserAccounts" ADD CONSTRAINT "UserAccounts_Worker_ID_fkey" FOREIGN KEY ("Worker_ID") REFERENCES "HealthCareWorkers"("Worker_ID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserAccounts" ADD CONSTRAINT "UserAccounts_Role_ID_fkey" FOREIGN KEY ("Role_ID") REFERENCES "UserRoles"("Role_ID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ConsentForms" ADD CONSTRAINT "ConsentForms_Child_ID_fkey" FOREIGN KEY ("Child_ID") REFERENCES "Children"("Child_ID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ConsentForms" ADD CONSTRAINT "ConsentForms_Worker_ID_fkey" FOREIGN KEY ("Worker_ID") REFERENCES "HealthCareWorkers"("Worker_ID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ScreeningSession" ADD CONSTRAINT "ScreeningSession_School_ID_fkey" FOREIGN KEY ("School_ID") REFERENCES "Schools"("School_ID") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_AccessibleInstruments" ADD CONSTRAINT "_AccessibleInstruments_A_fkey" FOREIGN KEY ("A") REFERENCES "GroupModel"("id") ON DELETE CASCADE ON UPDATE CASCADE;

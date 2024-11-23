@@ -252,3 +252,128 @@ model SetupStateModel {
   isExperimentalFeaturesEnabled Boolean?
   isSetup                       Boolean
 }
+
+model HealthScreenings {
+  Screening_ID      Int               @id @default(autoincrement())
+  Child_ID          Int
+  Worker_ID         Int
+  Screening_Date    DateTime
+  Station           String
+  Created_At        DateTime
+  Updated_At        DateTime
+  Created_By        Int
+  Updated_By        Int
+  Eyes              Eyes[]
+  Vision            Vision[]
+  OralHealth        OralHealth[]
+  Ear               Ear[]
+  Children          Children          @relation(fields: [Child_ID], references: [Child_ID])
+  HealthCareWorkers HealthCareWorkers @relation(fields: [Worker_ID], references: [Worker_ID])
+}
+
+model Eyes {
+  Screening_ID      Int              @id @default(autoincrement())
+  Discharge         Boolean
+  Inflammation      Boolean
+  Squint            Boolean
+  Other_Abnormality Boolean
+  HealthScreenings  HealthScreenings @relation(fields: [Screening_ID], references: [Screening_ID])
+}
+
+model Vision {
+  Screening_ID           Int              @id @default(autoincrement())
+  Wears_Glasses          Boolean
+  NPC_Over_6cm           Boolean
+  Right_Eye_No_Glasses   String
+  Left_Eye_No_Glasses    String
+  Right_Eye_With_Glasses String
+  Left_Eye_With_Glasses  String
+  HealthScreenings       HealthScreenings @relation(fields: [Screening_ID], references: [Screening_ID])
+}
+
+model OralHealth {
+  Screening_ID      Int              @id @default(autoincrement())
+  Dental_Caries     Boolean
+  Gum_Disease       Boolean
+  Thrush_Sores      Boolean
+  Other_Abnormality Boolean
+  HealthScreenings  HealthScreenings @relation(fields: [Screening_ID], references: [Screening_ID])
+}
+
+model Ear {
+  Screening_ID      Int              @id @default(autoincrement())
+  Discharge         String
+  Wax_Impaction     String
+  Inflamed_Eardrum  String
+  Other_Abnormality String
+  Wears_Hearing_Aid Boolean
+  HealthScreenings  HealthScreenings @relation(fields: [Screening_ID], references: [Screening_ID])
+}
+
+model Children {
+  Child_ID         Int                @id @default(autoincrement())
+  Name             String
+  Date_of_Birth    DateTime
+  Age              Int
+  School_ID        Int
+  Grade            String
+  Consent_Received Boolean
+  Session_ID       Int
+  HealthScreenings HealthScreenings[]
+  Schools          Schools            @relation(fields: [School_ID], references: [School_ID])
+  ScreeningSession ScreeningSession   @relation(fields: [Session_ID], references: [Session_ID])
+
+  ConsentForms ConsentForms[]
+}
+
+model HealthCareWorkers {
+  Worker_ID        Int                @id @default(autoincrement())
+  Worker_Name      String
+  Assigned_Area    String
+  HealthScreenings HealthScreenings[]
+  UserAccounts     UserAccounts[]
+
+  ConsentForms ConsentForms[]
+}
+
+model Schools {
+  School_ID Int @id @default(autoincrement())
+
+  School_Name      String
+  Children         Children[]
+  ScreeningSession ScreeningSession[]
+}
+
+model UserAccounts {
+  User_ID           Int               @id @default(autoincrement())
+  Worker_ID         Int
+  Username          String
+  Password_Hash     String
+  Role_ID           Int
+  HealthCareWorkers HealthCareWorkers @relation(fields: [Worker_ID], references: [Worker_ID])
+  UserRoles         UserRoles         @relation(fields: [Role_ID], references: [Role_ID])
+}
+
+model UserRoles {
+  Role_ID      Int            @id @default(autoincrement())
+  Role_Name    String
+  UserAccounts UserAccounts[]
+}
+
+model ConsentForms {
+  Consent_ID        Int               @id @default(autoincrement())
+  Child_ID          Int
+  Worker_ID         Int
+  Uploaded_Date     DateTime
+  Consent_Status    Boolean
+  Children          Children          @relation(fields: [Child_ID], references: [Child_ID])
+  HealthCareWorkers HealthCareWorkers @relation(fields: [Worker_ID], references: [Worker_ID])
+}
+
+model ScreeningSession {
+  Session_ID   Int        @id @default(autoincrement())
+  Session_Date DateTime
+  School_ID    Int
+  Children     Children[]
+  Schools      Schools    @relation(fields: [School_ID], references: [School_ID])
+}
